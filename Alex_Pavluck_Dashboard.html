@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSS Team 2026 Workplan Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-card: #ffffff;
+            --bg-header: #1a2e4a;
+            --text-primary: #1e2a38;
+            --text-secondary: #5c6b7a;
+            --text-on-dark: #ffffff;
+            --color-alex: #3b82f6;
+            --color-jackie: #10b981;
+            --color-joseph: #f59e0b;
+            --positive: #10b981;
+            --warning: #f59e0b;
+            --negative: #ef4444;
+            --gap: 16px;
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .dashboard-container { max-width: 1440px; margin: 0 auto; padding: var(--gap); }
+
+        /* ── Header ── */
+        .dashboard-header {
+            background: linear-gradient(135deg, #1a2e4a 0%, #2d4a6e 100%);
+            color: var(--text-on-dark);
+            padding: 22px 28px;
+            border-radius: var(--radius);
+            margin-bottom: var(--gap);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+        .header-left .subtitle { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+
+        .filters { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+
+        .filter-group { display: flex; flex-direction: column; gap: 3px; }
+
+        .filter-group label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.55);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .filter-group select {
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 130px;
+        }
+        .filter-group select option { background: #1a2e4a; color: #fff; }
+
+        .reset-btn {
+            padding: 7px 14px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            align-self: flex-end;
+        }
+        .reset-btn:hover { background: rgba(255,255,255,0.25); }
+
+        /* ── Multi-select dropdown (shared by person + label filters) ── */
+        .multiselect-wrapper { position: relative; }
+
+        .multiselect-trigger {
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .multiselect-trigger::after { content: '▾'; font-size: 11px; opacity: 0.7; }
+        .multiselect-trigger.active { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.18); }
+
+        .multiselect-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: #1e3a5f;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            min-width: 180px;
+            max-height: 290px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            padding: 6px 0;
+        }
+        .multiselect-dropdown.open { display: block; }
+
+        .multiselect-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: rgba(255,255,255,0.88);
+            transition: background 0.12s;
+        }
+        .multiselect-option:hover { background: rgba(255,255,255,0.1); }
+        .multiselect-option input[type="checkbox"] { accent-color: #3b82f6; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+
+        .multiselect-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+
+        .multiselect-all {
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: rgba(255,255,255,0.55);
+        }
+
+        .active-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #3b82f6;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 1px 6px;
+            min-width: 18px;
+        }
+
+        /* Person avatar dots */
+        .person-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-alex    { background: var(--color-alex); }
+        .dot-jackie  { background: var(--color-jackie); }
+        .dot-joseph  { background: var(--color-joseph); }
+
+        /* ── KPI Row ── */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            opacity: 0.06;
+            transform: translate(15px,-15px);
+        }
+        .kpi-card.total    { border-color: #6366f1; } .kpi-card.total::after    { background: #6366f1; }
+        .kpi-card.progress { border-color: #f59e0b; } .kpi-card.progress::after { background: #f59e0b; }
+        .kpi-card.notstart { border-color: #8b5cf6; } .kpi-card.notstart::after { background: #8b5cf6; }
+        .kpi-card.complete { border-color: #10b981; } .kpi-card.complete::after { background: #10b981; }
+        .kpi-card.onhold   { border-color: #ef4444; } .kpi-card.onhold::after   { background: #ef4444; }
+        .kpi-card.alex     { border-color: var(--color-alex);   } .kpi-card.alex::after   { background: var(--color-alex);   }
+        .kpi-card.jackie   { border-color: var(--color-jackie); } .kpi-card.jackie::after { background: var(--color-jackie); }
+        .kpi-card.joseph   { border-color: var(--color-joseph); } .kpi-card.joseph::after { background: var(--color-joseph); }
+
+        .kpi-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; margin-bottom: 6px; }
+        .kpi-value { font-size: 32px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+        .kpi-sub   { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* ── Chart rows ── */
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            margin: 4px 0 8px;
+        }
+
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        }
+        .chart-container h3 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-container canvas { max-height: 260px; }
+
+        /* ── Table ── */
+        .table-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+            overflow-x: auto;
+            margin-bottom: var(--gap);
+        }
+        .table-section h3 { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table thead th {
+            text-align: left;
+            padding: 9px 12px;
+            border-bottom: 2px solid #e5e7eb;
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        .data-table thead th:hover { color: var(--text-primary); background: #f8fafc; }
+        .data-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        .data-table tbody tr:hover { background: #f8fafc; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+
+        .task-name { font-weight: 500; max-width: 300px; line-height: 1.4; }
+
+        /* Badges */
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .badge-in-progress { background: #fef3c7; color: #92400e; }
+        .badge-not-started { background: #ede9fe; color: #4c1d95; }
+        .badge-completed   { background: #d1fae5; color: #065f46; }
+        .badge-on-hold     { background: #fee2e2; color: #7f1d1d; }
+        .badge-important   { background: #fee2e2; color: #991b1b; }
+        .badge-medium      { background: #e0f2fe; color: #0c4a6e; }
+        .badge-low         { background: #f3f4f6; color: #374151; }
+
+        .label-tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #f1f5f9; color: #475569; margin: 1px 2px 1px 0; }
+
+        .person-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 600;
+            margin: 1px 2px 1px 0;
+            white-space: nowrap;
+        }
+        .pill-alex   { background: #dbeafe; color: #1e40af; }
+        .pill-jackie { background: #d1fae5; color: #065f46; }
+        .pill-joseph { background: #fef3c7; color: #92400e; }
+
+        .footer { text-align: center; font-size: 12px; color: var(--text-secondary); padding: 8px 0 16px; }
+
+        @media (max-width: 800px) {
+            .dashboard-header { flex-direction: column; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .chart-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <h1>HSS Team 2026 Workplan</h1>
+            <div class="subtitle">Alex Pavluck · Jackie Lane · Joseph Oye &nbsp;·&nbsp; Exported 09 Mar 2026</div>
+        </div>
+        <div class="filters">
+
+            <!-- Person multi-select -->
+            <div class="filter-group">
+                <label>Person</label>
+                <div class="multiselect-wrapper" id="person-wrapper">
+                    <div class="multiselect-trigger" id="person-trigger" onclick="toggleDropdown('person',event)">
+                        <span id="person-trigger-text">All People</span>
+                    </div>
+                    <div class="multiselect-dropdown" id="person-dropdown">
+                        <div class="multiselect-option multiselect-all" onclick="toggleAll('person',event)">
+                            <input type="checkbox" id="person-check-all" checked onclick="toggleAll('person',event)">
+                            <span>All People</span>
+                        </div>
+                        <div class="multiselect-divider"></div>
+                        <div class="multiselect-option" onclick="toggleOne('person','Alex Pavluck',event)">
+                            <input type="checkbox" id="person-check-Alex Pavluck" value="Alex Pavluck" checked onclick="event.stopPropagation()" onchange="onCheckChange('person')">
+                            <span class="person-dot dot-alex"></span><span>Alex Pavluck</span>
+                        </div>
+                        <div class="multiselect-option" onclick="toggleOne('person','Jackie Lane',event)">
+                            <input type="checkbox" id="person-check-Jackie Lane" value="Jackie Lane" checked onclick="event.stopPropagation()" onchange="onCheckChange('person')">
+                            <span class="person-dot dot-jackie"></span><span>Jackie Lane</span>
+                        </div>
+                        <div class="multiselect-option" onclick="toggleOne('person','Joseph Oye',event)">
+                            <input type="checkbox" id="person-check-Joseph Oye" value="Joseph Oye" checked onclick="event.stopPropagation()" onchange="onCheckChange('person')">
+                            <span class="person-dot dot-joseph"></span><span>Joseph Oye</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category -->
+            <div class="filter-group">
+                <label>Category</label>
+                <select id="filter-category" onchange="applyFilters()">
+                    <option value="all">All Categories</option>
+                </select>
+            </div>
+
+            <!-- Status -->
+            <div class="filter-group">
+                <label>Status</label>
+                <select id="filter-status" onchange="applyFilters()">
+                    <option value="all">All Statuses</option>
+                    <option value="In progress">In Progress</option>
+                    <option value="Not started">Not Started</option>
+                    <option value="Completed">Completed</option>
+                    <option value="onhold">On Hold / Cancelled</option>
+                </select>
+            </div>
+
+            <!-- Priority -->
+            <div class="filter-group">
+                <label>Priority</label>
+                <select id="filter-priority" onchange="applyFilters()">
+                    <option value="all">All Priorities</option>
+                    <option value="Important">Important</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+
+            <!-- Labels multi-select -->
+            <div class="filter-group">
+                <label>Labels</label>
+                <div class="multiselect-wrapper" id="label-wrapper">
+                    <div class="multiselect-trigger" id="label-trigger" onclick="toggleDropdown('label',event)">
+                        <span id="label-trigger-text">All Labels</span>
+                    </div>
+                    <div class="multiselect-dropdown" id="label-dropdown">
+                        <div class="multiselect-option multiselect-all" onclick="toggleAll('label',event)">
+                            <input type="checkbox" id="label-check-all" checked onclick="toggleAll('label',event)">
+                            <span>All Labels</span>
+                        </div>
+                        <div class="multiselect-divider"></div>
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetFilters()">↺ Reset</button>
+        </div>
+    </header>
+
+    <!-- KPI Row: Status -->
+    <div class="section-label">Overview</div>
+    <section class="kpi-row" id="kpi-status-row">
+        <div class="kpi-card total">
+            <div class="kpi-label">Total Tasks</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub" id="kpi-total-sub"></div>
+        </div>
+        <div class="kpi-card progress">
+            <div class="kpi-label">In Progress</div>
+            <div class="kpi-value" id="kpi-inprogress">—</div>
+            <div class="kpi-sub" id="kpi-inprogress-pct"></div>
+        </div>
+        <div class="kpi-card notstart">
+            <div class="kpi-label">Not Started</div>
+            <div class="kpi-value" id="kpi-notstarted">—</div>
+            <div class="kpi-sub" id="kpi-notstarted-pct"></div>
+        </div>
+        <div class="kpi-card complete">
+            <div class="kpi-label">Completed</div>
+            <div class="kpi-value" id="kpi-completed">—</div>
+            <div class="kpi-sub" id="kpi-completed-pct"></div>
+        </div>
+        <div class="kpi-card onhold">
+            <div class="kpi-label">On Hold</div>
+            <div class="kpi-value" id="kpi-onhold">—</div>
+            <div class="kpi-sub" id="kpi-onhold-pct"></div>
+        </div>
+    </section>
+
+    <!-- KPI Row: Per person -->
+    <div class="section-label">By Person</div>
+    <section class="kpi-row">
+        <div class="kpi-card alex">
+            <div class="kpi-label">Alex Pavluck</div>
+            <div class="kpi-value" id="kpi-alex">—</div>
+            <div class="kpi-sub" id="kpi-alex-sub"></div>
+        </div>
+        <div class="kpi-card jackie">
+            <div class="kpi-label">Jackie Lane</div>
+            <div class="kpi-value" id="kpi-jackie">—</div>
+            <div class="kpi-sub" id="kpi-jackie-sub"></div>
+        </div>
+        <div class="kpi-card joseph">
+            <div class="kpi-label">Joseph Oye</div>
+            <div class="kpi-value" id="kpi-joseph">—</div>
+            <div class="kpi-sub" id="kpi-joseph-sub"></div>
+        </div>
+    </section>
+
+    <!-- Charts row 1 -->
+    <section class="chart-row">
+        <div class="chart-container">
+            <h3>Tasks by Category</h3>
+            <canvas id="chart-category"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Status Breakdown</h3>
+            <canvas id="chart-status"></canvas>
+        </div>
+    </section>
+
+    <!-- Charts row 2 -->
+    <section class="chart-row">
+        <div class="chart-container">
+            <h3>Tasks by Person</h3>
+            <canvas id="chart-person"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Top Labels / Themes</h3>
+            <canvas id="chart-labels"></canvas>
+        </div>
+    </section>
+
+    <!-- Table -->
+    <div class="table-section">
+        <h3>All Tasks</h3>
+        <div class="table-meta" id="table-meta"></div>
+        <div id="table-container"></div>
+    </div>
+
+    <footer class="footer">HSS Team 2026 Workplan · Data as of 09 Mar 2026</footer>
+</div>
+
+<script>
+const PEOPLE = ['Alex Pavluck','Jackie Lane','Joseph Oye'];
+const PERSON_COLOR = { 'Alex Pavluck': '#3b82f6', 'Jackie Lane': '#10b981', 'Joseph Oye': '#f59e0b' };
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#6366f1'];
+
+const RAW_DATA = [
+  {"task":"ESPEN Collect paper","category":"Publications","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["ESPEN","Publication"],"late":false},
+  {"task":"Hydrocele master training roll out - support plan for cascading training across ELFA countries","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Roland Bougma","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","ELFA","MMDP"],"late":false},
+  {"task":"MMDP Systems Assessment Tool - Benin","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["RLMF","MMDP","Training","Travel"],"late":false},
+  {"task":"MDA tracker customisation to SARMAAN","category":"Committees","status":"Not started","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MDA"],"late":false},
+  {"task":"Transition ESPEN Collect to internal system","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":"12/31/2026","labels":["External","RLMF","Surveys","ESPEN"],"late":false},
+  {"task":"Hydrocele master training roll out - Support coordination","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Roland Bougma","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","ELFA","MMDP","Training"],"late":false},
+  {"task":"MMDP Systems Assessment Tool - Ghana","category":"Tools","status":"Completed","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["RLMF","MMDP","Training","Travel"],"late":false},
+  {"task":"RLMF SSC: KPIs development for systems related activities","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"MMDP Systems Assessment Tool - global development","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"CES - countries TBD","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Tom Milson; Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MDA"],"late":false},
+  {"task":"Review and follow up to ensure that the post-MDA review checklist is completed","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Sarah Bartlett; Laura Senyonjo; Philip Downs; Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MDA"],"late":false},
+  {"task":"Provide support to the Campaign Effectiveness Coalition to plan meetings and make integration experiences more accessible","category":"Committees","status":"Not started","priority":"Medium","assignedTo":"Alex Pavluck; Joseph Oye","people":["Alex Pavluck","Joseph Oye"],"dueDate":"02/27/2027","labels":["Integration","External","MDA"],"late":false},
+  {"task":"Application of the Systems Assessment Tool to integrated NTDs","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"NOEC PowerPoint Template generation","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck; Philip Downs","people":["Alex Pavluck"],"dueDate":"03/31/2026","labels":["External"],"late":false},
+  {"task":"Hydrocele master training roll out - sustainability of cascade training, use of mannequins","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Roland Bougma","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","ELFA","MMDP","Training"],"late":false},
+  {"task":"Amplify team workshop in Virginia","category":"Travel","status":"Not started","priority":"Medium","assignedTo":"Leah G. Wohlgemuth; Alex Pavluck; Geordie Woods","people":["Alex Pavluck"],"dueDate":null,"labels":["AI","Travel"],"late":false},
+  {"task":"Issues with use of data in community workbook and how to use it in JRSM","category":"Service delivery/Strategy","status":"In progress","priority":"Medium","assignedTo":"Ndellejong Cosmas Ejong; Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["Integration","External","MDA"],"late":false},
+  {"task":"National NTD Program in DRC","category":"Service delivery/Strategy","status":"Completed","priority":"Medium","assignedTo":"Ibrahim Mallam Sali; Alex Pavluck; Heather Burgess","people":["Alex Pavluck"],"dueDate":"02/09/2026","labels":["Integration","External","MDA"],"late":false},
+  {"task":"Urgent donor request: TER on data flow/systems","category":"Service delivery/Strategy","status":"Completed","priority":"Medium","assignedTo":"Andy Tate; Alex Pavluck","people":["Alex Pavluck"],"dueDate":"03/02/2026","labels":[],"late":false},
+  {"task":"RLMF SSC: Reaching hard to reach/Never treated populations - review and development of approach","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","MDA"],"late":false},
+  {"task":"Amplify - Content","category":"Training","status":"In progress","priority":"Medium","assignedTo":"Leah G. Wohlgemuth; Alex Pavluck; Geordie Woods; Philip Downs","people":["Alex Pavluck"],"dueDate":"09/30/2026","labels":["AI","External","Training","ESPEN"],"late":false},
+  {"task":"CHIP paper resubmission","category":"Publications","status":"In progress","priority":"Medium","assignedTo":"Andy Tate; Alex Pavluck","people":["Alex Pavluck"],"dueDate":"04/01/2026","labels":["ESPEN","Publication"],"late":false},
+  {"task":"Rapid Assessment of Avoidable Blindness: RAAB7 Training - Far North Cameroon","category":"Training","status":"Completed","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MMDP","Training"],"late":false},
+  {"task":"Polio-SARMAAN integration framework","category":"Service delivery/Strategy","status":"In progress","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Integration","Internal","MDA","SARMAAN"],"late":false},
+  {"task":"Develop approach to track the impact of MSAT","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","MMDP"],"late":false},
+  {"task":"Work with Dimagi BMGF, and ESPEN to build a community around ODS (open source AI chatbot framework)","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":[],"late":false},
+  {"task":"SSC in-person meeting in UK","category":"Travel","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Alex Pavluck","people":["Alex Pavluck","Jackie Lane"],"dueDate":null,"labels":["Integration","RLMF","Travel","Committee"],"late":false},
+  {"task":"Develop a data to action framework to flag missed populations and incorporate into Task Force coverage analysis tool","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Alex Pavluck; Laura Senyonjo","people":["Alex Pavluck"],"dueDate":null,"labels":["External","RLMF","MDA"],"late":false},
+  {"task":"Help Liberia with point prevalence data on ESPEN","category":"Cancel or put on hold","status":"Not started","priority":"Medium","assignedTo":"Alex Pavluck; Louise Hamill","people":["Alex Pavluck"],"dueDate":null,"labels":["External"],"late":false},
+  {"task":"Weekly meeting: ESPEN Technical Partners","category":"Committees","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["External","RLMF","ESPEN"],"late":false},
+  {"task":"Develop country profile PDFs for WHO mid-term review and beyond","category":"Tools","status":"In progress","priority":"Important","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":"06/30/2026","labels":["External","MDA","Surveys","MMDP","ESPEN"],"late":false},
+  {"task":"MMDP Systems Assessment Tool - Sierra Leone follow up","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"QSAT - countries TBD","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Tom Milson; Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MDA"],"late":false},
+  {"task":"Support Standard Co/Pharma partners as product owner for NTDeliver","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["External","MDA"],"late":false},
+  {"task":"Develop a theory of change and evaluation strategy for Amplify","category":"Service delivery/Strategy","status":"In progress","priority":"Medium","assignedTo":"Leah G. Wohlgemuth; Alex Pavluck; Geordie Woods","people":["Alex Pavluck"],"dueDate":"03/02/2026","labels":["AI","External"],"late":true},
+  {"task":"LF Elimination virtual global webinar","category":"Training","status":"In progress","priority":"Medium","assignedTo":"Jackie Lane; Philip Downs","people":["Jackie Lane"],"dueDate":null,"labels":["External","MDA","Surveys","MMDP","Training"],"late":false},
+  {"task":"RLMF SSC: Lab capacity strengthening - support planning and recruitment","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Louise Hamill","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"Disability inclusion in NTDs programmes - identify integration opportunities","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Joseph Oye","people":["Jackie Lane","Joseph Oye"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"Identify publication opportunity on systems assessment tool","category":"Publications","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["RLMF","Publication"],"late":false},
+  {"task":"Explore integration of MMDP within PEC training","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Integration","Internal","MMDP","Training"],"late":false},
+  {"task":"Microplanning - Support countries with failed elimination surveys","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","MDA"],"late":false},
+  {"task":"ESPEN Data Managers Workshop (June?)","category":"Travel","status":"Not started","priority":"Medium","assignedTo":"Andy Tate; Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["RLMF","ESPEN","Travel"],"late":false},
+  {"task":"Disability inclusion in NTDs programmes - identify integration opportunities (v2)","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Geordie Woods; Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Internal","RLMF","MDA","MMDP"],"late":false},
+  {"task":"Primary Eye Care training: countries TBD","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Integration","Internal","MMDP","Training"],"late":false},
+  {"task":"Mali RAAB-Oncho paper","category":"Publications","status":"In progress","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["Publication"],"late":false},
+  {"task":"ORI - Work with IT to move to a cheaper platform","category":"Tools","status":"In progress","priority":"Low","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["AI","Internal"],"late":false},
+  {"task":"Application of the Systems Assessment Tool to SCH/STH","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"RLMF SSC: Reaching hard to reach populations - approach development (v2)","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","MDA","MMDP"],"late":false},
+  {"task":"Participate in CHAI/Sightsavers collaboration to transition DHIS2 MDA supervision in Nigeria","category":"Tools","status":"In progress","priority":"Important","assignedTo":"Babacar Ngom; Alex Pavluck; Christian Nwosu; Laura Senyonjo","people":["Alex Pavluck"],"dueDate":"07/31/2026","labels":["Integration","External","Internal","MDA"],"late":false},
+  {"task":"Manage the selection and rollout of AI tools and services internally","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["AI","Internal"],"late":false},
+  {"task":"HMIS integration, training, or support as needed","category":"Training","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["Integration","Internal"],"late":false},
+  {"task":"Anti Microbial Resistance Steering Committee Member","category":"Committees","status":"In progress","priority":"Medium","assignedTo":"Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["External","Committee"],"late":false},
+  {"task":"Hire a new trainer for ESPEN","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Alex Pavluck; Louise Hamill","people":["Alex Pavluck","Jackie Lane"],"dueDate":"03/16/2026","labels":["External","RLMF","Surveys","ESPEN"],"late":false},
+  {"task":"Global: Support Sightsavers rollout of digital financing","category":"Service delivery/Strategy","status":"In progress","priority":"Medium","assignedTo":"Philip Downs; Joseph Oye","people":["Joseph Oye"],"dueDate":null,"labels":["External","Finance"],"late":false},
+  {"task":"Implement ESPEN EPIRF generation tool","category":"Tools","status":"Completed","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["External","RLMF","Surveys","ESPEN"],"late":false},
+  {"task":"Amplify - end of course group meeting in Brazzaville","category":"Travel","status":"Not started","priority":"Medium","assignedTo":"Leah G. Wohlgemuth; Alex Pavluck; Geordie Woods","people":["Alex Pavluck"],"dueDate":"09/30/2026","labels":["AI","External","ESPEN","Travel"],"late":false},
+  {"task":"MMDP Systems Assessment Tool - Cameroon","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["RLMF","MMDP","Training","Travel"],"late":false},
+  {"task":"Lymphedema training roll out - overall ELFA programme approach","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Roland Bougma","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","ELFA","MMDP","Training"],"late":false},
+  {"task":"TurboTaxification of dossier","category":"Tools","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck; Philip Downs","people":["Alex Pavluck"],"dueDate":"12/31/2026","labels":["Internal","MDA","Surveys","MMDP"],"late":false},
+  {"task":"RLMF SSC: Support to supply chain management and effective drug procurement","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF"],"late":false},
+  {"task":"AI for LF training material development paper draft","category":"Publications","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck; Geordie Woods","people":["Alex Pavluck"],"dueDate":null,"labels":["Publication"],"late":false},
+  {"task":"Attend & Present at the ETAG meeting (Amplify)","category":"Travel","status":"Not started","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":[],"late":false},
+  {"task":"Weekly meeting: ESPEN Collect / administrative management of secondments","category":"Committees","status":"In progress","priority":"Medium","assignedTo":"Alex Pavluck","people":["Alex Pavluck"],"dueDate":null,"labels":["External","RLMF","ESPEN"],"late":false},
+  {"task":"Collaborate with countries developing dossiers to capture lessons learned","category":"Tools","status":"Not started","priority":"Medium","assignedTo":"Ndellejong Cosmas Ejong; Caleb Mpyet; Alex Pavluck; Joseph Oye; Louise Hamill","people":["Alex Pavluck","Joseph Oye"],"dueDate":null,"labels":["External"],"late":false},
+  {"task":"MMDP strategy development - countries TBC (Uganda, Sierra Leone, Benin?)","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","MMDP"],"late":false},
+  {"task":"RLMF SSC: LF MMDP approach - review and further development, dissemination of training materials","category":"Training","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Roland Bougma","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","MMDP"],"late":false},
+  {"task":"RLMF SSC: Development of approach to domestic resource contributions","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["Internal","RLMF","Finance"],"late":false},
+  {"task":"RLMF Systems Strengthening Committee chair","category":"Committees","status":"In progress","priority":"Medium","assignedTo":"Jackie Lane","people":["Jackie Lane"],"dueDate":null,"labels":["External","RLMF","Committee"],"late":false},
+  {"task":"SSC sub-group on defining Integration (RLMF, Task Force, WHO)","category":"Service delivery/Strategy","status":"Not started","priority":"Medium","assignedTo":"Jackie Lane; Alex Pavluck; Philip Downs; Joseph Oye","people":["Alex Pavluck","Jackie Lane","Joseph Oye"],"dueDate":null,"labels":["Integration","Internal","RLMF","MDA","MMDP"],"late":false}
+];
+
+// ── State ──
+let filteredData = [...RAW_DATA];
+let charts = {};
+let sortState = { col: null, dir: 'asc' };
+
+// Multi-select state keyed by filter name
+const msState = {
+    person: new Set(PEOPLE),
+    label:  new Set()   // filled in init
+};
+
+// ── Init ──
+function init() {
+    // Category dropdown
+    const cats = [...new Set(RAW_DATA.map(d => d.category))].sort();
+    const catSel = document.getElementById('filter-category');
+    cats.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c;
+        o.textContent = c === 'Cancel or put on hold' ? 'On Hold / Cancelled' : c;
+        catSel.appendChild(o);
+    });
+
+    // Label multi-select: populate checkboxes
+    const allLabels = [...new Set(RAW_DATA.flatMap(d => d.labels))].sort();
+    allLabels.forEach(l => msState.label.add(l));
+    const dd = document.getElementById('label-dropdown');
+    allLabels.forEach(label => {
+        const div = document.createElement('div');
+        div.className = 'multiselect-option';
+        div.innerHTML = `<input type="checkbox" id="label-check-${label}" value="${label}" checked onclick="event.stopPropagation()" onchange="onCheckChange('label')"><span>${label}</span>`;
+        div.querySelector('span').onclick = e => { e.stopPropagation(); div.querySelector('input').click(); };
+        dd.appendChild(div);
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', e => {
+        ['person','label'].forEach(key => {
+            const wrapper = document.getElementById(`${key}-wrapper`);
+            if (wrapper && !wrapper.contains(e.target)) {
+                document.getElementById(`${key}-dropdown`).classList.remove('open');
+                document.getElementById(`${key}-trigger`).classList.remove('active');
+            }
+        });
+    });
+
+    buildCharts();
+    applyFilters();
+}
+
+// ── Multi-select helpers ──
+function toggleDropdown(key, e) {
+    e.stopPropagation();
+    document.getElementById(`${key}-dropdown`).classList.toggle('open');
+    document.getElementById(`${key}-trigger`).classList.toggle('active');
+}
+
+function toggleOne(key, value, e) {
+    e.stopPropagation();
+    const cb = document.getElementById(`${key}-check-${value}`);
+    if (cb) { cb.checked = !cb.checked; }
+    onCheckChange(key);
+}
+
+function onCheckChange(key) {
+    const allValues = key === 'person'
+        ? PEOPLE
+        : [...new Set(RAW_DATA.flatMap(d => d.labels))].sort();
+
+    msState[key] = new Set(allValues.filter(v => {
+        const cb = document.getElementById(`${key}-check-${v}`);
+        return cb && cb.checked;
+    }));
+
+    const allCb = document.getElementById(`${key}-check-all`);
+    const allChecked = msState[key].size === allValues.length;
+    allCb.checked = allChecked;
+    allCb.indeterminate = !allChecked && msState[key].size > 0;
+
+    updateTriggerText(key, allValues);
+    applyFilters();
+}
+
+function toggleAll(key, e) {
+    e.stopPropagation();
+    const allCb = document.getElementById(`${key}-check-all`);
+    const shouldCheck = allCb.checked;
+    const allValues = key === 'person'
+        ? PEOPLE
+        : [...new Set(RAW_DATA.flatMap(d => d.labels))].sort();
+
+    allValues.forEach(v => {
+        const cb = document.getElementById(`${key}-check-${v}`);
+        if (cb) cb.checked = shouldCheck;
+    });
+    msState[key] = shouldCheck ? new Set(allValues) : new Set();
+    allCb.indeterminate = false;
+    updateTriggerText(key, allValues);
+    applyFilters();
+}
+
+function updateTriggerText(key, allValues) {
+    const el = document.getElementById(`${key}-trigger-text`);
+    const labels = { person: ['All People', 'People'], label: ['All Labels', 'Labels'] };
+    const [allText, countText] = labels[key];
+    if (msState[key].size === 0 || msState[key].size === allValues.length) {
+        el.innerHTML = allText;
+    } else {
+        el.innerHTML = `${countText} <span class="active-count">${msState[key].size}</span>`;
+    }
+}
+
+// ── Filters ──
+function applyFilters() {
+    const cat      = document.getElementById('filter-category').value;
+    const status   = document.getElementById('filter-status').value;
+    const priority = document.getElementById('filter-priority').value;
+
+    const allLabels  = [...new Set(RAW_DATA.flatMap(d => d.labels))].sort();
+    const labelActive  = msState.label.size > 0 && msState.label.size < allLabels.length;
+    const personActive = msState.person.size > 0 && msState.person.size < PEOPLE.length;
+
+    filteredData = RAW_DATA.filter(d => {
+        // Person filter: task must include at least one selected person
+        if (personActive && !d.people.some(p => msState.person.has(p))) return false;
+        // Category
+        if (cat !== 'all' && d.category !== cat) return false;
+        // Status / on-hold
+        if (status !== 'all') {
+            if (status === 'onhold') {
+                if (d.category !== 'Cancel or put on hold') return false;
+            } else {
+                if (d.status !== status) return false;
+            }
+        }
+        // Priority
+        if (priority !== 'all' && d.priority !== priority) return false;
+        // Labels: task must have at least one selected label
+        if (labelActive && !d.labels.some(l => msState.label.has(l))) return false;
+        return true;
+    });
+
+    renderKPIs();
+    updateCharts();
+    renderTable();
+}
+
+function resetFilters() {
+    document.getElementById('filter-category').value = 'all';
+    document.getElementById('filter-status').value   = 'all';
+    document.getElementById('filter-priority').value = 'all';
+
+    // Reset person
+    PEOPLE.forEach(p => {
+        const cb = document.getElementById(`person-check-${p}`);
+        if (cb) cb.checked = true;
+    });
+    msState.person = new Set(PEOPLE);
+    document.getElementById('person-check-all').checked = true;
+    document.getElementById('person-check-all').indeterminate = false;
+    updateTriggerText('person', PEOPLE);
+
+    // Reset labels
+    const allLabels = [...new Set(RAW_DATA.flatMap(d => d.labels))].sort();
+    allLabels.forEach(l => {
+        const cb = document.getElementById(`label-check-${l}`);
+        if (cb) cb.checked = true;
+    });
+    msState.label = new Set(allLabels);
+    document.getElementById('label-check-all').checked = true;
+    document.getElementById('label-check-all').indeterminate = false;
+    updateTriggerText('label', allLabels);
+
+    applyFilters();
+}
+
+// ── KPIs ──
+function renderKPIs() {
+    const total    = filteredData.length;
+    const inProg   = filteredData.filter(d => d.status === 'In progress').length;
+    const notStart = filteredData.filter(d => d.status === 'Not started' && d.category !== 'Cancel or put on hold').length;
+    const comp     = filteredData.filter(d => d.status === 'Completed').length;
+    const onHold   = filteredData.filter(d => d.category === 'Cancel or put on hold').length;
+    const pct = n => total > 0 ? `${Math.round((n/total)*100)}% of shown` : '—';
+
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('kpi-total-sub').textContent = `of ${RAW_DATA.length} total`;
+    document.getElementById('kpi-inprogress').textContent = inProg;
+    document.getElementById('kpi-inprogress-pct').textContent = pct(inProg);
+    document.getElementById('kpi-notstarted').textContent = notStart;
+    document.getElementById('kpi-notstarted-pct').textContent = pct(notStart);
+    document.getElementById('kpi-completed').textContent = comp;
+    document.getElementById('kpi-completed-pct').textContent = pct(comp);
+    document.getElementById('kpi-onhold').textContent = onHold;
+    document.getElementById('kpi-onhold-pct').textContent = pct(onHold);
+
+    // Per-person KPIs
+    const statLabel = p => {
+        const t = filteredData.filter(d => d.people.includes(p));
+        const ip = t.filter(d => d.status === 'In progress').length;
+        const ns = t.filter(d => d.status === 'Not started' && d.category !== 'Cancel or put on hold').length;
+        const cp = t.filter(d => d.status === 'Completed').length;
+        return `${ip} in progress · ${ns} not started · ${cp} done`;
+    };
+    ['Alex Pavluck','Jackie Lane','Joseph Oye'].forEach(p => {
+        const key = p.split(' ')[0].toLowerCase();
+        document.getElementById(`kpi-${key}`).textContent = filteredData.filter(d => d.people.includes(p)).length;
+        document.getElementById(`kpi-${key}-sub`).textContent = statLabel(p);
+    });
+}
+
+// ── Charts ──
+function countBy(data, field) {
+    const c = {};
+    data.forEach(d => { const v = d[field]||'Unknown'; c[v]=(c[v]||0)+1; });
+    return c;
+}
+
+function buildCharts() {
+    const catCounts = countBy(RAW_DATA, 'category');
+    const catKeys   = Object.keys(catCounts).sort((a,b) => catCounts[b]-catCounts[a]);
+
+    charts.category = new Chart(document.getElementById('chart-category'), {
+        type: 'bar',
+        data: {
+            labels: catKeys.map(l => l.length > 24 ? l.substring(0,22)+'…' : l),
+            datasets: [{ data: catKeys.map(k=>catCounts[k]), backgroundColor: COLORS.map(c=>c+'CC'), borderColor: COLORS, borderWidth: 1, borderRadius: 4 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { title: ctx => catKeys[ctx[0].dataIndex] } } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } }
+        }
+    });
+
+    charts.status = new Chart(document.getElementById('chart-status'), {
+        type: 'doughnut',
+        data: {
+            labels: ['In Progress','Not Started','Completed','On Hold/Cancelled'],
+            datasets: [{ data: [0,0,0,0], backgroundColor: ['#f59e0b','#8b5cf6','#10b981','#ef4444'], borderColor: '#fff', borderWidth: 3 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '62%',
+            plugins: {
+                legend: { position: 'right', labels: { usePointStyle: true, padding: 14, font: { size: 12 } } },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } }
+            }
+        }
+    });
+
+    // Tasks by Person (stacked bar: status per person)
+    charts.person = new Chart(document.getElementById('chart-person'), {
+        type: 'bar',
+        data: {
+            labels: ['Alex Pavluck','Jackie Lane','Joseph Oye'],
+            datasets: [
+                { label: 'In Progress', data: [0,0,0], backgroundColor: '#f59e0b', borderRadius: 3 },
+                { label: 'Not Started', data: [0,0,0], backgroundColor: '#8b5cf6', borderRadius: 3 },
+                { label: 'Completed',   data: [0,0,0], backgroundColor: '#10b981', borderRadius: 3 },
+                { label: 'On Hold',     data: [0,0,0], backgroundColor: '#ef4444', borderRadius: 3 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 14, font: { size: 12 } } } },
+            scales: {
+                x: { stacked: true, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { stepSize: 2 }, grid: { color: '#f1f5f9' } }
+            }
+        }
+    });
+
+    // Labels chart
+    charts.labels = new Chart(document.getElementById('chart-labels'), {
+        type: 'bar',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: COLORS.map(c=>c+'BB'), borderColor: COLORS, borderWidth: 1, borderRadius: 4 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } }
+        }
+    });
+
+    updateCharts();
+}
+
+function updateCharts() {
+    // Category
+    const catCounts = countBy(filteredData, 'category');
+    const allCats   = [...new Set(RAW_DATA.map(d=>d.category))].sort((a,b)=>(catCounts[b]||0)-(catCounts[a]||0));
+    charts.category.data.labels = allCats.map(l=>l.length>24?l.substring(0,22)+'…':l);
+    charts.category.data.datasets[0].data = allCats.map(k=>catCounts[k]||0);
+    charts.category.update('none');
+
+    // Status doughnut
+    charts.status.data.datasets[0].data = [
+        filteredData.filter(d=>d.status==='In progress').length,
+        filteredData.filter(d=>d.status==='Not started'&&d.category!=='Cancel or put on hold').length,
+        filteredData.filter(d=>d.status==='Completed').length,
+        filteredData.filter(d=>d.category==='Cancel or put on hold').length,
+    ];
+    charts.status.update('none');
+
+    // Person stacked bar
+    PEOPLE.forEach((p, i) => {
+        const sub = filteredData.filter(d => d.people.includes(p));
+        charts.person.data.datasets[0].data[i] = sub.filter(d=>d.status==='In progress').length;
+        charts.person.data.datasets[1].data[i] = sub.filter(d=>d.status==='Not started'&&d.category!=='Cancel or put on hold').length;
+        charts.person.data.datasets[2].data[i] = sub.filter(d=>d.status==='Completed').length;
+        charts.person.data.datasets[3].data[i] = sub.filter(d=>d.category==='Cancel or put on hold').length;
+    });
+    charts.person.update('none');
+
+    // Labels
+    const lc = {};
+    filteredData.forEach(d=>d.labels.forEach(l=>{ lc[l]=(lc[l]||0)+1; }));
+    const sorted = Object.entries(lc).sort((a,b)=>b[1]-a[1]).slice(0,14);
+    charts.labels.data.labels = sorted.map(([l])=>l);
+    charts.labels.data.datasets[0].data = sorted.map(([,v])=>v);
+    charts.labels.update('none');
+}
+
+// ── Table ──
+function statusBadge(d) {
+    if (d.category==='Cancel or put on hold') return `<span class="badge badge-on-hold">On Hold</span>`;
+    const cls   = {'In progress':'badge-in-progress','Not started':'badge-not-started','Completed':'badge-completed'};
+    const label = {'In progress':'In Progress','Not started':'Not Started','Completed':'Completed'};
+    return `<span class="badge ${cls[d.status]||''}">${label[d.status]||d.status}</span>`;
+}
+
+function priorityBadge(p) {
+    const cls = {'Important':'badge-important','Medium':'badge-medium','Low':'badge-low'};
+    return `<span class="badge ${cls[p]||'badge-medium'}">${p}</span>`;
+}
+
+function personPills(d) {
+    return d.people.map(p => {
+        const key = p.split(' ')[0].toLowerCase();
+        const first = p.split(' ')[0];
+        return `<span class="person-pill pill-${key}">${first}</span>`;
+    }).join('');
+}
+
+function renderTable() {
+    let data = [...filteredData];
+    if (sortState.col) {
+        data.sort((a,b) => {
+            let av=a[sortState.col]??'', bv=b[sortState.col]??'';
+            const cmp = String(av).localeCompare(String(bv));
+            return sortState.dir==='asc' ? cmp : -cmp;
+        });
+    }
+
+    document.getElementById('table-meta').textContent = `Showing ${data.length} of ${RAW_DATA.length} tasks`;
+
+    const cols = [
+        {label:'Task',key:'task'},{label:'Category',key:'category'},{label:'Person',key:'people'},
+        {label:'Status',key:'status'},{label:'Priority',key:'priority'},{label:'Due Date',key:'dueDate'},{label:'Labels',key:'labels'}
+    ];
+
+    const arrow = k => sortState.col!==k ? ' <span style="opacity:.3">⇅</span>' : sortState.dir==='asc' ? ' ▲' : ' ▼';
+
+    let html = `<table class="data-table"><thead><tr>`;
+    cols.forEach(c => { html += `<th onclick="sortTable('${c.key}')">${c.label}${arrow(c.key)}</th>`; });
+    html += `</tr></thead><tbody>`;
+
+    data.forEach(d => {
+        html += `<tr>
+            <td><div class="task-name">${d.task}${d.late ? ' <span style="color:#ef4444;font-size:10px">● late</span>' : ''}</div></td>
+            <td style="white-space:nowrap">${d.category==='Cancel or put on hold'?'On Hold/Cancelled':d.category}</td>
+            <td style="white-space:nowrap">${personPills(d)}</td>
+            <td>${statusBadge(d)}</td>
+            <td>${priorityBadge(d.priority)}</td>
+            <td style="white-space:nowrap;color:var(--text-secondary)">${d.dueDate||'—'}</td>
+            <td>${d.labels.map(l=>`<span class="label-tag">${l}</span>`).join('')}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById('table-container').innerHTML = html;
+}
+
+window.sortTable = function(key) {
+    sortState.dir = sortState.col===key ? (sortState.dir==='asc'?'desc':'asc') : 'asc';
+    sortState.col = key;
+    renderTable();
+};
+
+init();
+</script>
+</body>
+</html>
